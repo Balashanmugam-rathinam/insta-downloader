@@ -7,6 +7,7 @@ import yt_dlp
 import uuid
 import os
 import socket
+
 # ============================================
 # FASTAPI APP
 # ============================================
@@ -31,7 +32,9 @@ app.add_middleware(
 # DOWNLOAD FOLDER
 # ============================================
 
-DOWNLOAD_DIR = "downloads"
+BASE_DIR = "/home/Bala/insta-downloader/backend"
+
+DOWNLOAD_DIR = os.path.join(BASE_DIR, "downloads")
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -53,6 +56,7 @@ def home():
         "message": "Downloader Backend Running",
         "server": socket.gethostname()
     }
+
 # ============================================
 # DOWNLOAD ROUTE
 # ============================================
@@ -65,27 +69,31 @@ async def download_video(data: DownloadRequest):
         print("Downloading:", data.url)
 
         # Unique filename
-        filename = f"{uuid.uuid4()}.mp4"
+        unique_id = str(uuid.uuid4())
 
-        output_path = os.path.join(
+        output_template = os.path.join(
             DOWNLOAD_DIR,
-            filename
+            f"{unique_id}.%(ext)s"
         )
 
         # yt-dlp config
         ydl_opts = {
-    "cookiefile": "/home/Bala/cookies.txt",
-    "outtmpl": "downloads/%(title)s.%(ext)s",
-    "http_headers": {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
-        ),
-        "Referer": "https://www.instagram.com/",
-    },
-    "quiet": False,
-    "verbose": True,
-}
+
+            "cookiefile": "/home/Bala/cookies.txt",
+
+            "outtmpl": output_template,
+
+            "http_headers": {
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
+                ),
+                "Referer": "https://www.instagram.com/",
+            },
+
+            "quiet": False,
+            "verbose": True,
+        }
 
         # Download + extract info
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -94,6 +102,8 @@ async def download_video(data: DownloadRequest):
                 data.url,
                 download=True
             )
+
+            downloaded_file = ydl.prepare_filename(info)
 
         # Thumbnail handling
         thumbnail = (
@@ -105,7 +115,10 @@ async def download_video(data: DownloadRequest):
             )
         )
 
-        print("Download completed")
+        print("Downloaded file:", downloaded_file)
+
+        # Extract actual filename
+        actual_filename = os.path.basename(downloaded_file)
 
         return {
 
@@ -118,7 +131,7 @@ async def download_video(data: DownloadRequest):
 
             "thumbnail": thumbnail,
 
-            "download_url": f"/file/{filename}"
+            "download_url": f"/file/{actual_filename}"
         }
 
     except Exception as e:
@@ -143,6 +156,8 @@ async def get_file(filename: str):
         DOWNLOAD_DIR,
         filename
     )
+
+    print("Serving file:", file_path)
 
     if not os.path.exists(file_path):
 
