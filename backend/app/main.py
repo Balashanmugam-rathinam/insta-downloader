@@ -74,24 +74,18 @@ async def download_video(data: DownloadRequest):
 
         # yt-dlp config
         ydl_opts = {
-
-            "format": "best",
-
-            "outtmpl": output_path,
-
-            "merge_output_format": "mp4",
-
-            "noplaylist": True,
-
-            "quiet": False,
-
-            "http_headers": {
-                "User-Agent": (
-                    "Mozilla/5.0 "
-                    "(iPhone; CPU iPhone OS 15_0 like Mac OS X)"
-                )
-            }
-        }
+    "cookiefile": "/home/Bala/cookies.txt",
+    "outtmpl": "downloads/%(title)s.%(ext)s",
+    "http_headers": {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
+        ),
+        "Referer": "https://www.instagram.com/",
+    },
+    "quiet": False,
+    "verbose": True,
+}
 
         # Download + extract info
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
