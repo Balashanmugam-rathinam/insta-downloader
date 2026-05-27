@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -22,7 +22,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://insta-downloader-lemon.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,7 +70,33 @@ async def download_video(data: DownloadRequest):
 
         print("Downloading:", data.url)
 
-        # Unique filename
+        url = data.url.lower()
+
+        # ============================================
+        # SUPPORTED PLATFORMS
+        # ============================================
+
+        supported_sites = [
+            "instagram.com",
+            "youtube.com",
+            "youtu.be",
+            "tiktok.com",
+            "facebook.com",
+            "x.com",
+            "twitter.com"
+        ]
+
+        if not any(site in url for site in supported_sites):
+
+            return {
+                "success": False,
+                "error": "Unsupported platform"
+            }
+
+        # ============================================
+        # UNIQUE FILE
+        # ============================================
+
         unique_id = str(uuid.uuid4())
 
         output_template = os.path.join(
@@ -76,26 +104,40 @@ async def download_video(data: DownloadRequest):
             f"{unique_id}.%(ext)s"
         )
 
-        # yt-dlp config
+        # ============================================
+        # YT-DLP OPTIONS
+        # ============================================
+
         ydl_opts = {
 
-            "cookiefile": "/home/Bala/cookies.txt",
-
             "outtmpl": output_template,
-
-            "http_headers": {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
-                ),
-                "Referer": "https://www.instagram.com/",
-            },
 
             "quiet": False,
             "verbose": True,
         }
 
-        # Download + extract info
+        # ============================================
+        # INSTAGRAM SPECIAL CONFIG
+        # ============================================
+
+        if "instagram.com" in url:
+
+            ydl_opts["cookiefile"] = "/home/Bala/cookies.txt"
+
+            ydl_opts["http_headers"] = {
+
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
+                ),
+
+                "Referer": "https://www.instagram.com/",
+            }
+
+        # ============================================
+        # DOWNLOAD
+        # ============================================
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
             info = ydl.extract_info(
@@ -105,7 +147,10 @@ async def download_video(data: DownloadRequest):
 
             downloaded_file = ydl.prepare_filename(info)
 
-        # Thumbnail handling
+        # ============================================
+        # THUMBNAIL
+        # ============================================
+
         thumbnail = (
             info.get("thumbnail")
             or (
@@ -115,10 +160,9 @@ async def download_video(data: DownloadRequest):
             )
         )
 
-        print("Downloaded file:", downloaded_file)
-
-        # Extract actual filename
         actual_filename = os.path.basename(downloaded_file)
+
+        print("Downloaded:", actual_filename)
 
         return {
 
@@ -126,7 +170,7 @@ async def download_video(data: DownloadRequest):
 
             "title": info.get(
                 "title",
-                "Instagram Reel"
+                "Downloaded Media"
             ),
 
             "thumbnail": thumbnail,
@@ -134,15 +178,34 @@ async def download_video(data: DownloadRequest):
             "download_url": f"/file/{actual_filename}"
         }
 
-    except Exception as e:
+    # ============================================
+    # HANDLE DOWNLOAD ERRORS
+    # ============================================
 
-        print("DOWNLOAD ERROR:", str(e))
+    except yt_dlp.utils.DownloadError as e:
+
+        print("YT-DLP ERROR:", str(e))
 
         return {
 
             "success": False,
 
-            "error": str(e)
+            "error": "Failed to download media"
+        }
+
+    # ============================================
+    # HANDLE OTHER ERRORS
+    # ============================================
+
+    except Exception as e:
+
+        print("SERVER ERROR:", str(e))
+
+        return {
+
+            "success": False,
+
+            "error": "Internal server error"
         }
 
 # ============================================
@@ -150,7 +213,10 @@ async def download_video(data: DownloadRequest):
 # ============================================
 
 @app.get("/file/{filename}")
-async def get_file(filename: str):
+async def get_file(
+    filename: str,
+    background_tasks: BackgroundTasks
+):
 
     file_path = os.path.join(
         DOWNLOAD_DIR,
@@ -168,8 +234,18 @@ async def get_file(filename: str):
             "message": "File not found"
         }
 
+    # ============================================
+    # AUTO DELETE FILE AFTER DOWNLOAD
+    # ============================================
+
+    background_tasks.add_task(
+        os.remove,
+        file_path
+    )
+
     return FileResponse(
         path=file_path,
         media_type="video/mp4",
-        filename=filename
+        filename=filename,
+        background=background_tasks
     )
