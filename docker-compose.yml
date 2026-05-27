@@ -1,0 +1,30 @@
+services:
+
+  backend1:
+    build: ./backend
+    ports:
+      - "8001:8000"
+
+  backend2:
+    build: ./backend
+    ports:
+      - "8002:8000"
+
+  backend3:
+    build: ./backend
+    ports:
+      - "8003:8000"
+
+  nginx:
+    image: nginx:latest
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
