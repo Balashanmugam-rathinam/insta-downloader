@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -7,6 +7,8 @@ import yt_dlp
 import uuid
 import os
 import socket
+import threading
+import time
 
 # ============================================
 # FASTAPI APP
@@ -203,7 +205,7 @@ async def download_video(data: DownloadRequest):
 
             "success": False,
 
-            "error": str(e)
+            "error": "Failed to download media"
         }
 
     # ============================================
@@ -226,10 +228,7 @@ async def download_video(data: DownloadRequest):
 # ============================================
 
 @app.get("/file/{filename}")
-async def get_file(
-    filename: str,
-    background_tasks: BackgroundTasks
-):
+async def get_file(filename: str):
 
     file_path = os.path.join(
         DOWNLOAD_DIR,
@@ -248,17 +247,37 @@ async def get_file(
         }
 
     # ============================================
-    # AUTO DELETE FILE AFTER DOWNLOAD
+    # DELETE FILE AFTER DELAY
     # ============================================
 
-    background_tasks.add_task(
-        os.remove,
-        file_path
-    )
+    def delete_file_later(path):
+
+        time.sleep(10)
+
+        try:
+
+            if os.path.exists(path):
+
+                os.remove(path)
+
+                print("Deleted:", path)
+
+        except Exception as e:
+
+            print("DELETE ERROR:", str(e))
+
+    threading.Thread(
+        target=delete_file_later,
+        args=(file_path,),
+        daemon=True
+    ).start()
+
+    # ============================================
+    # RETURN FILE
+    # ============================================
 
     return FileResponse(
         path=file_path,
         media_type="video/mp4",
-        filename=filename,
-        background=background_tasks
+        filename=filename
     )
