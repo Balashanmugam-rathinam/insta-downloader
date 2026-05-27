@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 
-const BASE_URL = "insta-downloader-production-a2d6.up.railway.app";
+const BASE_URL = "https://insta-downloader-production-a2d6.up.railway.app";
 
 function GlowOrb({ className }) {
   return (
