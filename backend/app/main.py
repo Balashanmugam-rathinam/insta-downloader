@@ -66,45 +66,45 @@ def home():
 @app.post("/download")
 async def download_video(data: DownloadRequest):
 
+    print("Downloading:", data.url)
+
+    url = data.url.lower()
+
+    # ============================================
+    # BLOCK YOUTUBE
+    # ============================================
+
+    if "youtube.com" in url or "youtu.be" in url:
+
+        return {
+
+            "success": False,
+
+            "error": "YouTube downloads are currently not supported"
+        }
+
+    # ============================================
+    # SUPPORTED PLATFORMS
+    # ============================================
+
+    supported_sites = [
+        "instagram.com",
+        "tiktok.com",
+        "facebook.com",
+        "x.com",
+        "twitter.com"
+    ]
+
+    if not any(site in url for site in supported_sites):
+
+        return {
+
+            "success": False,
+
+            "error": "Please paste a valid supported URL"
+        }
+
     try:
-
-        print("Downloading:", data.url)
-
-        url = data.url.lower()
-
-        # ============================================
-        # BLOCK YOUTUBE
-        # ============================================
-
-        if "youtube.com" in url or "youtu.be" in url:
-
-            return {
-
-                "success": False,
-
-                "error": "YouTube downloads are currently not supported"
-            }
-
-        # ============================================
-        # SUPPORTED PLATFORMS
-        # ============================================
-
-        supported_sites = [
-            "instagram.com",
-            "tiktok.com",
-            "facebook.com",
-            "x.com",
-            "twitter.com"
-        ]
-
-        if not any(site in url for site in supported_sites):
-
-            return {
-
-                "success": False,
-
-                "error": "Please paste a valid supported URL"
-            }
 
         # ============================================
         # UNIQUE FILE
@@ -203,7 +203,7 @@ async def download_video(data: DownloadRequest):
 
             "success": False,
 
-            "error": "Failed to download media"
+            "error": str(e)
         }
 
     # ============================================
