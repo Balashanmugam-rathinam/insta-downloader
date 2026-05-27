@@ -117,7 +117,7 @@ async def download_video(data: DownloadRequest):
         }
 
         # ============================================
-        # INSTAGRAM SPECIAL CONFIG
+        # INSTAGRAM CONFIG
         # ============================================
 
         if "instagram.com" in url:
@@ -132,6 +132,22 @@ async def download_video(data: DownloadRequest):
                 ),
 
                 "Referer": "https://www.instagram.com/",
+            }
+
+        # ============================================
+        # YOUTUBE CONFIG
+        # ============================================
+
+        elif "youtube.com" in url or "youtu.be" in url:
+
+            ydl_opts["cookiefile"] = "/home/Bala/youtube_cookies.txt"
+
+            ydl_opts["http_headers"] = {
+
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
+                )
             }
 
         # ============================================
