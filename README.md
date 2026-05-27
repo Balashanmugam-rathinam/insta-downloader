@@ -5,9 +5,6 @@ A full-stack media downloader built using FastAPI, Vercel, Azure Ubuntu VM, yt-d
 Supports downloading media from:
 
 - Instagram
-- TikTok
-- Facebook
-- Twitter/X
 
 ---
 
