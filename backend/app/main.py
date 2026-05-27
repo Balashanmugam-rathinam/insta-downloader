@@ -73,13 +73,24 @@ async def download_video(data: DownloadRequest):
         url = data.url.lower()
 
         # ============================================
+        # BLOCK YOUTUBE
+        # ============================================
+
+        if "youtube.com" in url or "youtu.be" in url:
+
+            return {
+
+                "success": False,
+
+                "error": "YouTube downloads are currently not supported"
+            }
+
+        # ============================================
         # SUPPORTED PLATFORMS
         # ============================================
 
         supported_sites = [
             "instagram.com",
-            "youtube.com",
-            "youtu.be",
             "tiktok.com",
             "facebook.com",
             "x.com",
@@ -89,8 +100,10 @@ async def download_video(data: DownloadRequest):
         if not any(site in url for site in supported_sites):
 
             return {
+
                 "success": False,
-                "error": "Unsupported platform"
+
+                "error": "Please paste a valid supported URL"
             }
 
         # ============================================
@@ -132,22 +145,6 @@ async def download_video(data: DownloadRequest):
                 ),
 
                 "Referer": "https://www.instagram.com/",
-            }
-
-        # ============================================
-        # YOUTUBE CONFIG
-        # ============================================
-
-        elif "youtube.com" in url or "youtu.be" in url:
-
-            ydl_opts["cookiefile"] = "/home/Bala/youtube_cookies.txt"
-
-            ydl_opts["http_headers"] = {
-
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
-                )
             }
 
         # ============================================
