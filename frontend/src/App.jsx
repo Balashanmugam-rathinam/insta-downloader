@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 
-const BASE_URL = "http://4.188.80.147:8000";
+const BASE_URL = "https://instadownloaderapi.duckdns.org";
 
 function GlowOrb({ className }) {
   return (
